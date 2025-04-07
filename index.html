@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Inventario de Productos</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    input { display: block; margin-bottom: 10px; }
+    #mensaje { color: red; font-weight: bold; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Inventario</h1>
+
+  <div>
+    <h2>Agregar producto</h2>
+    <input id="codigo" placeholder="Código">
+    <input id="nombre" placeholder="Nombre">
+    <input id="costo" placeholder="Costo" type="number">
+    <input id="cantidad" placeholder="Cantidad" type="number">
+    <button onclick="agregarProducto()">Agregar</button>
+  </div>
+
+  <div>
+    <h2>Eliminar producto</h2>
+    <input id="codigoEliminar" placeholder="Código a eliminar">
+    <button id="eliminar">Eliminar</button>
+  </div>
+
+  <div>
+    <h2>Acciones</h2>
+    <button onclick="listarProductos()">Listar</button>
+    <button onclick="buscarProducto()">Buscar</button>
+  </div>
+
+  <div id="mensaje"></div>
+  <div id="resultado"></div>
+
+  <script>
+    const url = "http://localhost:3002";
+
+    function mostrarMensaje(mensaje, tiempo = 3000) {
+      const msgDiv = document.getElementById("mensaje");
+      msgDiv.innerText = mensaje;
+      setTimeout(() => msgDiv.innerText = "", tiempo);
+    }
+
+    function agregarProducto() {
+      const codigo = document.getElementById("codigo").value.trim();
+      const nombre = document.getElementById("nombre").value.trim();
+      const costo = parseFloat(document.getElementById("costo").value);
+      const cantidad = parseInt(document.getElementById("cantidad").value);
+
+      if (!codigo || !nombre || isNaN(costo) || isNaN(cantidad)) {
+        mostrarMensaje("Llena todos los campos correctamente");
+        return;
+      }
+
+      fetch(`${url}/producto`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codigo, nombre, costo, cantidad })
+      })
+      .then(res => res.json())
+      .then(data => {
+        mostrarMensaje(data.msg);
+        if (data.msg === "Se agregó correctamente") {
+          document.getElementById("codigo").value = "";
+          document.getElementById("nombre").value = "";
+          document.getElementById("costo").value = "";
+          document.getElementById("cantidad").value = "";
+        }
+      })
+      .catch(() => mostrarMensaje("Error al agregar producto"));
+    }
+
+    function listarProductos() {
+      fetch(`${url}/producto`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("resultado").innerHTML = data.lista;
+        })
+        .catch(() => mostrarMensaje("Error al listar productos"));
+    }
+
+    function buscarProducto() {
+      const codigo = prompt("Ingresa el código del producto:");
+      if (!codigo) return;
+
+      fetch(`${url}/producto/${codigo}`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("resultado").innerHTML = `<p>${data.resultado}</p>`;
+        })
+        .catch(() => mostrarMensaje("Error al buscar producto"));
+    }
+
+    document.getElementById('eliminar').addEventListener('click', () => {
+      const codigo = document.getElementById("codigoEliminar").value.trim();
+      if (!codigo) {
+        mostrarMensaje("Ingresa un código para eliminar");
+        return;
+      }
+
+      fetch(`${url}/producto/${codigo}`, {
+        method: "DELETE"
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.msg === "se elimino") {
+          document.getElementById("resultado").innerHTML = `<p>Producto eliminado: ${data.codigo}</p>`;
+        } else {
+          document.getElementById("resultado").innerHTML = `<p>${data.msg}</p>`;
+        }
+      })
+      .catch(() => mostrarMensaje("Error al eliminar producto"));
+    });
+  </script>
+</body>
+</html>
