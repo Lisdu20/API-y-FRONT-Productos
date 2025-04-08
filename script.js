@@ -29,31 +29,44 @@ class Inventario {
     }
 
     agregar(producto) {
-        if (this.productos.some(p => p.codigo == producto.codigo)) {
-            return "Ya existe el código";
+        if (this.buscar(producto.codigo) == null) {
+            this.productos.push(producto);
+            return true;
+        } else {
+            return false;
         }
-        this.productos.push(producto);
-        return "Se agregó correctamente";
     }
 
     listar() {
-        return this.productos.length > 0
-            ? this.productos.map(p => `Código: ${p.codigo}, Nombre: ${p.nombre}`).join('<br>')
-            : "No hay productos";
+        return this.productos
     }
 
     buscar(codigo) {
-        const producto = this.productos.find(p => p.codigo == codigo);
-        return producto ? producto.info() : "El producto no se encontró";
+        codigo = Number(codigo);
+        console.log("Buscando código:", codigo); // <- Verifica esto
+        for (let producto of this.productos) {
+            console.log("Comparando con:", producto.codigo);
+            if (producto.codigo === codigo) {
+                return producto;
+            }
+        }
+        return null;
     }
+    
+    
 
     eliminar(codigo) {
-        const index = this.productos.findIndex(p => p.codigo == codigo);
-        if (index !== -1) {
-            this.productos.splice(index, 1);
-            return true;
+        codigo = Number(codigo);
+        for (let i = 0; i < this.productos.length; i++) {
+            if (this.productos[i].codigo == codigo) {
+                let temp = this.productos[i];
+                // Reemplazar el producto por el último y hacer pop para eliminarlo
+                this.productos[i] = this.productos[this.productos.length - 1];
+                this.productos.pop();
+                return temp;
+            }
         }
-        return false;
+        return null;
     }
 }
 
@@ -66,34 +79,40 @@ app.get('/producto', (req, res) => {
 });
 
 app.get('/producto/:codigo', (req, res) => {
-    const codigo = req.params.codigo;
+    const codigo = parseInt(req.params.codigo);
     const resultado = inventario.buscar(codigo);
-    res.json({ resultado });
+    if (resultado == null)
+        res.json({ tipo: -1 });
+    else
+        res.json({ tipo: 1, producto: resultado.info() });
 });
 
 app.post('/producto', (req, res) => {
-    const { codigo, nombre, costo = 0, cantidad = 0 } = req.body;
+    let codigo = req.body.codigo;
+    let nombre = req.body.nombre;
+    let costo = req.body.costo;
+    let cantidad = req.body.cantidad;
 
-    if (!codigo || !nombre) {
-        res.json({ msg: "Faltan datos" });
-        return;
-    }
+    let nuevo = new Producto(codigo, nombre, costo, cantidad);
+    let resp = inventario.agregar(nuevo);
 
-    const producto = new Producto(codigo, nombre, costo, cantidad);
-    const mensaje = inventario.agregar(producto);
-    res.json({ msg: mensaje });
+    if (resp)
+        res.json({ tipo: 1, codigo: codigo });
+    else
+        res.json({ tipo: -1 });
 });
 
 app.delete('/producto/:codigo', (req, res) => {
-    const codigo = req.params.codigo;
+    const codigo = parseInt(req.params.codigo);
     const eliminado = inventario.eliminar(codigo);
 
-    if (eliminado) {
-        res.json({ msg: "se elimino", codigo });
+    if (eliminado == null) {
+        res.json({ tipo: -1 });
     } else {
-        res.json({ msg: "no se encontró" });
+        res.json({ tipo: 1, producto: eliminado });
     }
 });
 
 // Iniciar servidor
 app.listen(3002, () => console.log("Servidor corriendo en http://localhost:3002"));
+
