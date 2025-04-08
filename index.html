@@ -84,16 +84,22 @@
     }
 
     function buscarProducto() {
-      const codigo = prompt("Ingresa el código del producto:");
-      if (!codigo) return;
+  const codigo = prompt("Ingresa el código del producto:");
+  if (!codigo) return;
 
-      fetch(`${url}/producto/${codigo}`)
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById("resultado").innerHTML = `<p>${data.resultado}</p>`;
-        })
-        .catch(() => mostrarMensaje("Error al buscar producto"));
-    }
+  fetch(`${url}/producto/${codigo}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.tipo === -1) {
+        mostrarMensaje("Producto no encontrado");
+        document.getElementById("resultado").innerHTML = "";
+      } else {
+        document.getElementById("resultado").innerHTML = data.producto;
+      }
+    })
+    .catch(() => mostrarMensaje("Error al buscar producto"));
+}
+
 
     document.getElementById('eliminar').addEventListener('click', () => {
       const codigo = document.getElementById("codigoEliminar").value.trim();
